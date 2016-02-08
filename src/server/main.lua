@@ -251,6 +251,8 @@ end
 
 function handle_end(clt_i)
     broadcast(""..msg_end..msg_opponent, clt_i, ""..msg_end..msg_player)
+    os.execute("sleep 5")
+    init_game()
 end
 
 function handle_client(clt_i)
@@ -287,6 +289,8 @@ function handle_clients()
 end
 
 function main()
+    math.randomseed(os.time())
+
     init_server()
     clients = {}
     num_players = 2

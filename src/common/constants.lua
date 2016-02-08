@@ -1,7 +1,7 @@
 
 magick_length = 17
-client_magick = "18923472837461283"
-server_magick = "76976543437095976"
+client_magick = "18923472567861283"
+server_magick = "76970912437095976"
 
 -- Server -> to indicate game start
 msg_init = 0

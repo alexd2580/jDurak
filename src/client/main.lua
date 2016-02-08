@@ -109,7 +109,19 @@ end
 function handle_init(str)
     print "init"
     card_stack = {}
+
+    player = {
+        num_cards = 0,
+        hand = {}
+    }
+    opponent = {
+        num_cards = 0
+    }
+    card_stack = {}
+
+    turn_of_player = msg_opponent
     game_running = true
+
     handle_server(str)
 end
 
