@@ -44,6 +44,15 @@ function Socket:wait_for_read()
   return true -- no timeout
 end
 
+function Socket:wait_for_write()
+  rd,wr = lsocket.select({}, {self.socket})
+  if rd == nil then
+    print(wr)
+    return false
+  end
+  return true -- no timeout
+end
+
 function Socket:accept()
   self:wait_for_read()
 	sock,addr,port = self.socket:accept()
@@ -75,13 +84,20 @@ function Socket:read_nonblocking()
 end
 
 function Socket:write(str)
-  nbytes,err = self.socket:send(str)
-  if nbytes == nil then
-    print("socket:send() failed", err)
-    return false
-  elseif nbytes == false then
-    print("TODO implement wait for send")
-    return false
+  local written = 0
+  local to_write = #str
+  while written < to_write do
+    self:wait_for_write()
+    nbytes,err = self.socket:send(str)
+    if nbytes == nil then
+      print("socket:send() failed", err)
+      return false
+    elseif nbytes == false then
+      print("Impossible case")
+      return false
+    end
+    written = written + nbytes
+    str = str:sub(nbytes+1)
   end
   return true
 end
