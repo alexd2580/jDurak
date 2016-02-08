@@ -46,18 +46,27 @@ function Card.load_deck()
     }
 
     backPath = 'assets/img/back.png'
-    Card.back = Card(1,6)
-    Card.back.image = love.graphics.newImage(backPath)
+    Card.back_image = love.graphics.newImage(backPath)
 end
 
 function Card:initialize(color, value)
     self.color = color
     self.value = value
-    self.image = Card.deck[color][value].image
-    self.size = Card.deck[color][value].size
+    if color == 0 and value == 0 then
+      self.image = Card.back_image
+      self.size = Card.deck[1][6].size
+    else
+      self.image = Card.deck[color][value].image
+      self.size = Card.deck[color][value].size
+    end
     self.position = {
         x = 0,
         y = 0
+    }
+    self.color_rgb = {
+      r = 150 + love.math.random(100),
+      g = 150 + love.math.random(100),
+      b = 150 + love.math.random(100)
     }
     self.rotation = 0
 end
@@ -92,6 +101,7 @@ end
 
 function Card:draw()
     love.graphics.push()
+    love.graphics.setColor(self.color_rgb.r, self.color_rgb.g, self.color_rgb.b)
     love.graphics.translate(
         self.position.x + Card.draw_size.w / 2,
         self.position.y + Card.draw_size.h / 2

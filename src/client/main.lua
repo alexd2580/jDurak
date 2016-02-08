@@ -19,6 +19,8 @@ local stack_pos = nil
 local deck_pos = nil
 local mouse_pos = nil
 
+local deck_card = nil
+
 local main_font = nil
 local font_height = nil
 local game_running = nil
@@ -66,7 +68,8 @@ function love.load()
     }
 
     opponent = {
-        num_cards = 0
+        num_cards = 0,
+        hand = {}
     }
 
     card_stack = {}
@@ -93,6 +96,10 @@ function love.load()
         x = 0, y = 0
     }
 
+    deck_card = Card(0,0) -- back_card
+    deck_card.position.x = deck_pos.x
+    deck_card.position.y = deck_pos.y
+
     local font_path = "assets/fonts/blowbrush.otf"
     font_height = 50
     main_font = love.graphics.newFont(font_path, font_height)
@@ -115,9 +122,9 @@ function handle_init(str)
         hand = {}
     }
     opponent = {
-        num_cards = 0
+        num_cards = 0,
+        hand = {}
     }
-    card_stack = {}
 
     turn_of_player = msg_opponent
     game_running = true
@@ -134,6 +141,7 @@ function handle_get(str)
         player.num_cards = table.getn(player.hand)
     else
         opponent.num_cards = opponent.num_cards + 1
+        table.insert(opponent.hand, Card(0,0))
     end
     handle_server(str)
 end
@@ -149,6 +157,7 @@ function handle_put(str)
     else
         card,str = get_card(str, server)
         opponent.num_cards = opponent.num_cards - 1
+        table.remove(opponent.hand, math.random(opponent.num_cards))
     end
     card.position.x = stack_pos.x + love.math.random() * 40 - 20
     card.position.y = stack_pos.y + love.math.random() * 40 - 20
@@ -253,22 +262,20 @@ end
 function draw_opponent()
     offs,dff = draw_hand_offset(opponent.num_cards)
 
-    Card.back.position.y = opponent_row
     for i=1, opponent.num_cards, 1 do
-        Card.back.position.x = offs + (i-1) * dff - Card.draw_size.w / 2
-        Card.back:draw()
+        opponent.hand[i].position.x = offs + (i-1) * dff - Card.draw_size.w / 2
+        opponent.hand[i].position.y = opponent_row -- once?
+        opponent.hand[i]:draw()
     end
 end
 
 function draw_table()
-    n = table.getn(card_stack)
+    n = #card_stack
     for i=1, n, 1 do
         card_stack[i]:draw()
     end
 
-    Card.back.position.x = deck_pos.x
-    Card.back.position.y = deck_pos.y
-    Card.back:draw()
+    deck_card:draw()
 end
 
 function draw_player()
