@@ -20,7 +20,7 @@ function Card:initialize(color, value)
 end
 
 function Card:to_string()
-    return "".. self.color .. self.value // 10 .. self.value % 10
+    return "".. self.color .. math.floor(self.value/10) .. self.value % 10
 end
 
 function Card:print()
@@ -91,19 +91,30 @@ function broadcast(msg, clt_i, clt_msg)
 end
 
 function draw_rand_card()
-    n = #card_deck
-    i = math.random(n)
-    c = card_deck[i]
+    local n = #card_deck
+    if n == 0 then
+      card_deck = card_stack
+      n = #card_deck
+      card_stack = { card_deck[n] }
+      table.remove(card_deck, n)
+      n = n - 1
+      broadcast(""..msg_restack)
+    end
+    local i = math.random(n)
+    local crd = card_deck[i]
+    if crd == nil then
+      print("i: "..i, "n: "..n)
+    end
     table.remove(card_deck, i)
-    return c
+    return crd
 end
 
 function give_n_cards(clt_i, n)
     for i=1, n, 1 do
-        crd = draw_rand_card()
+        local crd = draw_rand_card()
         table.insert(clients[clt_i].hand, crd)
-        opmsg = ""..msg_get..msg_opponent
-        plmsg = ""..msg_get..msg_player..crd:to_string()
+        local opmsg = ""..msg_get..msg_opponent
+        local plmsg = ""..msg_get..msg_player..crd:to_string()
         broadcast(opmsg, clt_i, plmsg)
         io.write("Giving "..clt_i..": ")
         crd:print()
@@ -115,7 +126,7 @@ function put_on_table(crd_i, clt_i)
     table.remove(clients[clt_i].hand, crd_i)
     table.insert(card_stack, crd)
     pref = ""..msg_put
-    crd_i_s = ""..(crd_i//10)..(crd_i%10)
+    crd_i_s = ""..math.floor(crd_i/10)..(crd_i%10)
     broadcast(pref..msg_opponent..crd:to_string(),
         clt_i, pref..msg_player..crd_i_s)
     io.write(clt_i.." played ")
@@ -206,6 +217,9 @@ end
 
 function handle_put(clt_i, clt, crd_i)
     if turn_of_player == clt_i or prev_can_play == true then
+        if crd_i < 1 or crd_i > #clt.hand then
+          return
+        end
         crd = clt.hand[crd_i]
         if matches_top_card(crd) then
             turn_of_player = clt_i
@@ -228,6 +242,8 @@ function handle_put(clt_i, clt, crd_i)
                 advance_player()
             end
             put_on_table(crd_i, clt_i)
+            broadcast(""..msg_turn..msg_opponent,
+              turn_of_player, ""..msg_turn..msg_player)
         end
         -- else do nothing
     end

@@ -5,8 +5,8 @@ function love.conf(t)
     t.version = "0.10.0"        -- The LÖVE version this game was made for (string)
     t.console = false           -- Attach a console (boolean, Windows only)
     t.release = false           -- Enable release mode (boolean)
-    t.window.width = 1368       -- The window width (number)
-    t.window.height = 786       -- The window height (number)
+    t.window.width = 800        -- The window width (number)
+    t.window.height = 600       -- The window height (number)
     t.window.fullwindow = false -- Enable fullwindow (boolean)
     t.window.vsync = true       -- Enable vertical sync (boolean)
     t.window.fsaa = 0           -- The number of FSAA-buffers (number)
@@ -21,3 +21,5 @@ function love.conf(t)
     t.modules.sound = false     -- Enable the sound module (boolean)
     t.modules.physics = false   -- Enable the physics module (boolean)
 end
+
+--134.28.70.143

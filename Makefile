@@ -14,5 +14,5 @@ server:
 client: clean
 	@zip -q -r -0 jDurak_client.love assets/*
 	@cd src && zip -q -r -0 ../jDurak_client.love common/*
-	@cd src/client && zip -q -r -0 ../../jDurak_client.love main.lua
+	@cd src/client && zip -q -r -0 ../../jDurak_client.love main.lua conf.lua
 	@love jDurak_client.love

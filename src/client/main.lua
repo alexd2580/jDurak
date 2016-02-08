@@ -10,19 +10,29 @@ local player = nil
 local opponent = nil
 local card_stack = nil
 local window_size = nil
+local background = nil
+local background_size = nil
 
 local player_row = nil
 local opponent_row = nil
 local stack_pos = nil
 local deck_pos = nil
 local mouse_pos = nil
+
+local main_font = nil
+local font_height = nil
 local game_running = nil
+local pause_msg = nil
+
+local turn_of_player = nil
+
+local fps = nil
 
 ------------------- INIT -------------------
 
 function connect_server()
-    serv_addr = "127.0.0.1"
-    serv_port = 7404
+    local serv_addr = "127.0.0.1"
+    local serv_port = 7404
 
     print("Connecting to server: ", serv_addr..":"..serv_port)
     server = Socket:new(serv_addr, serv_port)
@@ -42,6 +52,12 @@ end
 connect_server() -- must be done before love loads
 
 function love.load()
+    imagePath = "assets/img/mapGround.jpeg"
+    background = love.graphics.newImage(imagePath)
+    background_size = {
+      w = background:getWidth(),
+      h = background:getHeight()
+    }
     Card.load_deck()
 
     player = {
@@ -77,11 +93,15 @@ function love.load()
         x = 0, y = 0
     }
 
-    game_running = false
+    local font_path = "assets/fonts/blowbrush.otf"
+    font_height = 50
+    main_font = love.graphics.newFont(font_path, font_height)
+    love.graphics.setFont(main_font)
 
-    --print("window", window_size.w, window_size.h)
-    --print("deck_pos", deck_pos.x, deck_pos.y)
-    --print("stack_pos", stack_pos.x, stack_pos.y)
+    game_running = false
+    pause_msg = "Waiting for server"
+    turn_of_player = msg_opponent
+    fps = 0
 end
 
 ------------ HANDLERS/UPDATE --------------
@@ -118,23 +138,34 @@ function handle_put(str)
         card,str = get_card(str, server)
         opponent.num_cards = opponent.num_cards - 1
     end
-    card.position.x = stack_pos.x + love.math.random(-10, 10)
-    card.position.y = stack_pos.y + love.math.random(-10, 10)
-    card.rotation = love.math.random(-2, 2)
+    card.position.x = stack_pos.x + love.math.random() * 40 - 20
+    card.position.y = stack_pos.y + love.math.random() * 40 - 20
+    card.rotation = love.math.random() * 4 - 2
     table.insert(card_stack, card)
     handle_server(str)
 end
 
 function handle_end(str)
-    print "end"
-    w,str = get_digit(str, server)
-    if w == msg_player then
-        print("you win")
-    else
-        print("you lose")
-    end
+  w,str = get_digit(str, server)
+  pause_msg = (w == msg_player) and "you win" or "you lose"
+  game_running = false
+  handle_server(str)
+end
 
-    game_running = false
+function handle_turn(str)
+  p,str = get_digit(str, server)
+  turn_of_player = p
+  handle_server(str)
+end
+
+function handle_restack(str)
+  crd = card_stack[#card_stack]
+  card_stack = { crd }
+  handle_server(str)
+end
+
+function handle_choose(str)
+  handle_server(str)
 end
 
 function handle_server(str)
@@ -153,6 +184,9 @@ function handle_server(str)
     if cmd == msg_init then handle_init(str)
     elseif cmd == msg_get then handle_get(str)
     elseif cmd == msg_put then handle_put(str)
+    elseif cmd == msg_turn then handle_turn(str)
+    elseif cmd == msg_restack then handle_restack(str)
+    elseif cmd == msg_choose then handle_choose(str)
     elseif cmd == msg_end then handle_end(str) end
 end
 
@@ -187,6 +221,7 @@ function love.mousereleased(x, y)
 end
 
 function love.update(dt)
+    fps = math.floor((30*fps + 1/dt) / 31)
     handle_server("")
     mouse_pos.x, mouse_pos.y = love.mouse.getPosition()
 end
@@ -235,14 +270,33 @@ function draw_player()
 end
 
 function love.draw()
-    print("a")
-    love.graphics.setColor(255, 255, 255)
-    draw_table()
-    draw_player()
-    draw_opponent()
+  love.graphics.setColor(255, 255, 255)
 
-    love.graphics.setColor(100, 100, 255)
-    love.graphics.circle("fill", mouse_pos.x, mouse_pos.y, 15)
+  love.graphics.push()
+  love.graphics.scale(
+    window_size.w / background_size.w,
+    window_size.h / background_size.h
+  )
+  love.graphics.draw(background, 0, 0)
+  love.graphics.pop()
+
+  draw_table()
+  draw_player()
+  draw_opponent()
+
+  love.graphics.setColor(100, 100, 255)
+  love.graphics.circle("fill", mouse_pos.x, mouse_pos.y, 15)
+
+  love.graphics.setColor(255, 255, 255)
+  love.graphics.print("FPS: "..fps, 10, 10, 0, 1)
+
+  if not game_running then
+    love.graphics.setColor(0, 0, 0)
+    love.graphics.print(pause_msg,
+      10,
+      window_size.h - 10 - font_height,
+      0, 1)
+  end
 end
 
 --[[ END ]]
