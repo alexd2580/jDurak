@@ -126,6 +126,7 @@ function put_on_table(crd_i, clt_i)
 end
 
 function init_game()
+    broadcast(""..msg_init)
     card_stack = {}
     card_deck = {}
     for i=1, 4, 1 do
@@ -207,6 +208,8 @@ function handle_put(clt_i, clt, crd_i)
     if turn_of_player == clt_i or prev_can_play == true then
         crd = clt.hand[crd_i]
         if matches_top_card(crd) then
+            turn_of_player = clt_i
+            prev_can_play = false
             if crd.value == 6 then
                 add_penalty(1)
                 advance_player()
@@ -224,7 +227,6 @@ function handle_put(clt_i, clt, crd_i)
             else
                 advance_player()
             end
-            prev_can_play = false
             put_on_table(crd_i, clt_i)
         end
         -- else do nothing

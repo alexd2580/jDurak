@@ -63,7 +63,7 @@ function Card:initialize(color, value)
 end
 
 function Card:to_string()
-    return "".. self.color .. self.value // 10 .. self.value % 10
+    return "".. self.color .. math.floor(self.value / 10) .. (self.value % 10)
 end
 
 function Card:print()

@@ -9,19 +9,19 @@ function get_digit(str, socket)
     if str:len() > 0 then
         return str:byte(1)-48, str:sub(2)
     else
-        get_digit(socket:read())
+        return get_digit(socket:read())
     end
 end
 
 function put_num(n, socket)
-    n1 = n // 10
+    n1 = math.floor(n / 10) -- lua 5.1 compat
     n2 = n % 10
     put_digit(n1, socket)
-    put_digit(n1, socket)
+    put_digit(n2, socket)
 end
 
 function put_digit(n, socket)
-    socket:write(string.char(n))
+    socket:write(string.char(n+48))
 end
 
 function get_card(str, socket)

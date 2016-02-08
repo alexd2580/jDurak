@@ -52,30 +52,30 @@ end
 
 function Socket:read(n)
   self:wait_for_read()
-  string,err = self.socket:recv(n)
-  if string == nil then
+  str,err = self.socket:recv(n)
+  if str == nil then
     print("socket:recv() failed", err)
     return false
-  elseif string == false then
+  elseif str == false then
     print("no data to read, Socket:wait_for_read() misbehaving")
     return false
   end
-  return string
+  return str
 end
 
 function Socket:read_nonblocking()
-    string,err = self.socket:recv()
-    if string == nil then
+    str,err = self.socket:recv()
+    if str == nil then
       print("socket:recv() failed", err)
       return false
-    elseif string == false then
+    elseif str == false then
       return ""
     end
-    return string
+    return str
 end
 
-function Socket:write(string)
-  nbytes,err = self.socket:send(string)
+function Socket:write(str)
+  nbytes,err = self.socket:send(str)
   if nbytes == nil then
     print("socket:send() failed", err)
     return false
