@@ -1,4 +1,4 @@
-class = require "middleclass"
+class = require "common/middleclass"
 lsocket = require "lsocket"
 
 Socket = class("Socket")
@@ -50,9 +50,9 @@ function Socket:accept()
   return Socket(addr, port, sock)
 end
 
-function Socket:read()
+function Socket:read(n)
   self:wait_for_read()
-  string,err = self.socket:recv()
+  string,err = self.socket:recv(n)
   if string == nil then
     print("socket:recv() failed", err)
     return false
@@ -61,6 +61,17 @@ function Socket:read()
     return false
   end
   return string
+end
+
+function Socket:read_nonblocking()
+    string,err = self.socket:recv()
+    if string == nil then
+      print("socket:recv() failed", err)
+      return false
+    elseif string == false then
+      return ""
+    end
+    return string
 end
 
 function Socket:write(string)

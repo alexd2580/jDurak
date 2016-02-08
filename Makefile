@@ -2,23 +2,17 @@
 
 default:
 
-clean_server:
-	@[ ! -e jDurak_server.love ] || rm jDurak_server.love
-
-clean_client:
+clean:
 	@[ ! -e jDurak_client.love ] || rm jDurak_client.love
-
-clean: clean_server clean_client
 	@[ ! -e pkg ] || rm -r pkg
 	@[ ! -e lib ] || rm -r lib
 	@[ ! -e temp ] || rm -r temp
 
-server: clean_server
-	@cd src/lib && zip -q -r -0 ../../jDurak_server.love *
-	@cd src/server && zip -q -r -0 ../../jDurak_server.love *
-	@love jDurak_server.love
+server:
+	@cd src && lua server/main.lua
 
-client: clean_client
-	@cd src/lib && zip -q -r -0 ../../jDurak_client.love *
-	@cd src/client && zip -q -r -0 ../../jDurak_client.love *
+client: clean
+	@zip -q -r -0 jDurak_client.love assets/*
+	@cd src && zip -q -r -0 ../jDurak_client.love common/*
+	@cd src/client && zip -q -r -0 ../../jDurak_client.love main.lua
 	@love jDurak_client.love
