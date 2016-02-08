@@ -59,9 +59,9 @@ function Socket:accept()
   return Socket(addr, port, sock)
 end
 
-function Socket:read(n)
+function Socket:read()
   self:wait_for_read()
-  str,err = self.socket:recv(n)
+  str,err = self.socket:recv()
   if str == nil then
     print("socket:recv() failed", err)
     return false

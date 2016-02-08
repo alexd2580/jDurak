@@ -133,7 +133,6 @@ function handle_init(str)
 end
 
 function handle_get(str)
-    print "get"
     p,str = get_digit(str, server)
     if p == msg_player then
         card,str = get_card(str, server)
@@ -147,7 +146,6 @@ function handle_get(str)
 end
 
 function handle_put(str)
-    print "put"
     p,str = get_digit(str, server)
     if p == msg_player then
         i,str = get_num(str, server)
@@ -201,7 +199,6 @@ function handle_server(str)
     end
 
     cmd,str = get_digit(str) -- socket not required: len > 0
-    print("msg:", cmd)
     if cmd == msg_init then handle_init(str)
     elseif cmd == msg_get then handle_get(str)
     elseif cmd == msg_put then handle_put(str)
@@ -219,14 +216,12 @@ function love.mousereleased(x, y)
     if y > deck_pos.y and y < deck_pos.y + Card.draw_size.h then
         if x > deck_pos.x and x < deck_pos.x + Card.draw_size.w then
             server:write(""..msg_get)
-            print("get cards")
         end
     end
     if y > player_row and y < player_row + Card.draw_size.h then
         offs,dff = draw_hand_offset(player.num_cards)
         brd_rgt = offs + (player.num_cards-1) * dff + Card.draw_size.w / 2
         if x > brd_rgt then
-            print("too far right")
             return
         end
         for i=player.num_cards, 1, -1 do
@@ -234,7 +229,6 @@ function love.mousereleased(x, y)
             if x > brd_lft then
                 server:write(""..msg_put)
                 put_num(i, server)
-                print("hit card ".. i)
                 return
             end
         end

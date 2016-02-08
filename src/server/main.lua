@@ -65,7 +65,12 @@ function wait_connection()
     client_socket = server_socket:accept()
     print("Client connected", client_socket.addr..":"..client_socket.port)
 
-    client_resp = client_socket:read(magick_length)
+    local client_resp = ""
+    while #client_resp ~= magick_length do
+      client_resp = client_resp .. client_socket:read(magick_length - #client_resp)
+    end
+
+
     if client_resp ~= client_magick then
         print("Invalid magick. Expected", client_magick, "Got", client_resp)
         return
@@ -100,6 +105,9 @@ function draw_rand_card()
       n = n - 1
       broadcast(""..msg_restack)
     end
+    if n == 0 then
+      return nil
+    end
     local i = math.random(n)
     local crd = card_deck[i]
     if crd == nil then
@@ -112,6 +120,9 @@ end
 function give_n_cards(clt_i, n)
     for i=1, n, 1 do
         local crd = draw_rand_card()
+        if crd == nil then
+          return
+        end
         table.insert(clients[clt_i].hand, crd)
         local opmsg = ""..msg_get..msg_opponent
         local plmsg = ""..msg_get..msg_player..crd:to_string()
@@ -261,7 +272,7 @@ function handle_client(clt_i)
     if res ~= false then -- if socket was still connected
         while res:len() > 0 do
             cmd,res = get_digit(res) -- socket not required: len > 0
-            print("msg:", cmd)
+            --print("msg:", cmd)
             if cmd == msg_get then
                 handle_get(clt_i, clt)
             elseif cmd == msg_put then
