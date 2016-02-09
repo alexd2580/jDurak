@@ -50,14 +50,19 @@ function Card.load_deck()
 end
 
 function Card:initialize(color, value)
+    if color < 1 or color > 4 or value < 6 or value > 14 then
+        if color ~= 0 or value ~= 0 then
+            print("[Card:initialize] Invalid params: ", color, value)
+        end
+    end
     self.color = color
     self.value = value
     if color == 0 and value == 0 then
-      self.image = Card.back_image
-      self.size = Card.deck[1][6].size
+        self.image = Card.back_image
+        self.size = Card.deck[1][6].size
     else
-      self.image = Card.deck[color][value].image
-      self.size = Card.deck[color][value].size
+        self.image = Card.deck[color][value].image
+        self.size = Card.deck[color][value].size
     end
     self.position = {
         x = 0,
