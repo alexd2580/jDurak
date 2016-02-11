@@ -12,9 +12,15 @@ local background = nil
 local background_size = nil
 
 -- Server
+
 local serv_addr = nil
 local serv_port = nil
 local server = nil
+
+-- UI
+local on_enter_key = nil
+local user_input_msg = nil
+local user_input = nil
 
 -- Game objects
 local player_hand = nil
@@ -133,7 +139,7 @@ function love.load()
     font_height = 50
     background_path = "assets/img/mapGround.jpeg"
 
-    serv_addr = "127.0.0.1"
+    serv_addr = "77.10.243.27" -- TODO remove
     serv_port = 7404
 
     -- Stuff required for empty game
@@ -147,12 +153,32 @@ function love.load()
     player_hand = {}
     opponent_hand = {}
 
-    connect_server()
     prepare_graphics()
     compute_positions()
+
+    love.upadte = update_base
+    love.draw = draw_input
+    user_input_msg = "Enter server address"
+    user_input = ""
+    on_enter_key = confirm_server_input
 end
 
 ------------ HANDLERS/UPDATE --------------
+
+function confirm_server_input()
+      serv_addr = user_input
+      user_input = ""
+      user_input_msg = "Enter port, default is 7404" -- TODO
+      on_enter_key = confirm_port_input
+end
+
+function confirm_port_input()
+      serv_port = user_input*1
+      love.update = update_game
+      love.draw = draw_game
+      connect_server()
+end
+
 
 -- msg 0: Reset, start new game
 function handle_init(str)
@@ -296,11 +322,39 @@ function love.mousereleased(x, y)
     end
 end
 
+function love.textinput(c)
+    user_input = user_input .. c
+end
+
+local utf8 = require("utf8")
+ 
+function love.keypressed(key)
+    print(key, on_enter_key)
+    if key == "backspace" then
+        -- get the byte offset to the last UTF-8 character in the string.
+        local byteoffset = utf8.offset(user_input, -1)
+ 
+        if byteoffset then
+            -- remove the last UTF-8 character.
+            -- string.sub operates on bytes rather than UTF-8 characters, so we couldn't do string.sub(text, 1, -2).
+            user_input = string.sub(user_input, 1, byteoffset - 1)
+        end
+    elseif key == "return" and on_enter_key ~= nil then
+        on_enter_key()
+    end
+end
+
 -- Executed repeatedly - client-side game logic loop
-function love.update(dt)
+function update_game(dt)
     love.timer.sleep(0.01)
     update_fps = math.floor((30*update_fps + 1/dt) / 31)
     handle_server("")
+    mouse_pos.x, mouse_pos.y = love.mouse.getPosition()
+end
+
+function update_base(dt)
+    love.timer.sleep(0.01)
+    update_fps = math.floor((30*update_fps + 1/dt) / 31)
     mouse_pos.x, mouse_pos.y = love.mouse.getPosition()
 end
 
@@ -336,7 +390,7 @@ function draw_hand_at(hand, row)
     end
 end
 
-function love.draw()
+function draw_game()
   draw_fps = love.timer.getFPS()
 
   love.graphics.setColor(255, 255, 255)
@@ -367,3 +421,28 @@ function love.draw()
       0, 1)
   end
 end
+
+function draw_input()
+  draw_fps = love.timer.getFPS()
+  
+  love.graphics.setColor(255, 255, 255)
+
+  love.graphics.push()
+  love.graphics.scale(
+    window_size.w / background_size.w,
+    window_size.h / background_size.h
+  )
+  love.graphics.draw(background, 0, 0)
+  love.graphics.pop()
+
+  love.graphics.setColor(100, 100, 255)
+  love.graphics.circle("fill", mouse_pos.x, mouse_pos.y, 15)
+
+  love.graphics.setColor(255, 255, 255)
+  love.graphics.print("FPS: "..update_fps.."/"..draw_fps, 10, 10, 0, 0.5)
+
+  love.graphics.setColor(0, 0, 0)
+  love.graphics.print(user_input_msg, 10, 10 + font_height + 10, 0, 1)
+  love.graphics.print(user_input, 10, 10 + 2*(font_height + 10), 0, 1)
+end
+
