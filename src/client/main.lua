@@ -327,13 +327,12 @@ function love.textinput(c)
 end
 
 local utf8 = require("utf8")
- 
+
 function love.keypressed(key)
-    print(key, on_enter_key)
     if key == "backspace" then
         -- get the byte offset to the last UTF-8 character in the string.
         local byteoffset = utf8.offset(user_input, -1)
- 
+
         if byteoffset then
             -- remove the last UTF-8 character.
             -- string.sub operates on bytes rather than UTF-8 characters, so we couldn't do string.sub(text, 1, -2).
@@ -424,7 +423,7 @@ end
 
 function draw_input()
   draw_fps = love.timer.getFPS()
-  
+
   love.graphics.setColor(255, 255, 255)
 
   love.graphics.push()
@@ -445,4 +444,3 @@ function draw_input()
   love.graphics.print(user_input_msg, 10, 10 + font_height + 10, 0, 1)
   love.graphics.print(user_input, 10, 10 + 2*(font_height + 10), 0, 1)
 end
-
