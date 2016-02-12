@@ -16,7 +16,7 @@ end
 -- returns the number and the unparsed string
 function Socket:get_digit(str)
     if self.err == nil then
-        if str == nil or std:len() == 0 then
+        if str == nil or str:len() == 0 then
             return self:get_digit(self:read())
         end
         return str:byte(1)-48, str:sub(2)

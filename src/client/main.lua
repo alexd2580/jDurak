@@ -49,6 +49,7 @@ function connect_server()
     local hdr = "[connect_server]"
     print(hdr, "Connecting to server: ", serv_addr..":"..serv_port)
     server = Socket(serv_addr, serv_port)
+    server:connect()
     server:write(client_magick)
     server_resp = server:read(magick_length)
 
@@ -233,22 +234,12 @@ end
 
 -- Check if server has sent data
 function handle_server(str)
-    if server.err ~= nil then
-        return
-    end
-
-    if str == nil then
-        str = ""
-    end
+    str = str == nil and "" or str
     if str:len() == 0 then
         str = server:read_nonblocking()
     end
-    if str == false then
-        print("[handle_server]", "Connection lost")
-        game_running = false
-        pause_msg = "Connection to server lost D:"
-        return
-    end
+    if server.err ~= nil then return end
+
     if str:len() == 0 then
         return -- nothing to do
     end
@@ -296,20 +287,24 @@ function love.mousereleased(x, y)
     end
 end
 
-function local_update(dt)
+---------------- LOVE.UPDATE ----------------------
+
+-- can and should be executed anyway
+function base_update(dt)
   love.timer.sleep(0.01)
   update_fps = math.floor((30*update_fps + 1/dt) / 31)
   mouse_pos.x, mouse_pos.y = love.mouse.getPosition()
 end
 
--- Executed repeatedly - client-side game logic loop
-function love.update(dt)
-    local_update(dt)
-    handle_server("")
+-- client-side game logic loop
+function game_update(dt)
+    base_update(dt)
     if server.err ~= nil then
       print(server.err)
-      love.update = local_update
+      pause_msg = "Connection to server lost D:"
+      love.update = error_update
     end
+    handle_server("")
 end
 
 ---------------- DRAW ------------------

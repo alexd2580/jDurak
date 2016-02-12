@@ -91,7 +91,7 @@ function Socket:read_nonblocking(n)
     if self.err == nil then
         local str,err = self.socket:recv(n)
         if str == nil then
-            self.err = "[Socket:read_nonblocking]"..err
+            self.err = "[Socket:read_nonblocking] ".. (err ~= nil and err or "")
         end
         return str == false and "" or str
     end
