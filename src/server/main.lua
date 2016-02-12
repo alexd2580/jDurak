@@ -1,8 +1,10 @@
-Socket = require "common/Socket"
+local lsocket = require "lsocket"
+local Socket = require "common/Socket"
+local class = require "common/middleclass"
 require "common/constants"
 require "common/util"
 
-Card = class("Card")
+local Card = class("Card")
 
 Card.valet = 11
 Card.queen = 12
@@ -69,7 +71,6 @@ function wait_connection()
     while #client_resp ~= magick_length do
       client_resp = client_resp .. client_socket:read(magick_length - #client_resp)
     end
-
 
     if client_resp ~= client_magick then
         print("Invalid magick. Expected", client_magick, "Got", client_resp)
@@ -269,21 +270,20 @@ end
 function handle_client(clt_i)
     clt = clients[clt_i]
     res = clt.socket:read_nonblocking()
-    if res ~= false then -- if socket was still connected
+    if clt.socket.err == nil then -- if socket was still connected
         while res:len() > 0 do
-            cmd,res = get_digit(res) -- socket not required: len > 0
+            cmd,res = clt.socket:get_digit(res)
             --print("msg:", cmd)
             if cmd == msg_get then
                 handle_get(clt_i, clt)
             elseif cmd == msg_put then
-                crd_i,res = get_num(res, clt.socket)
+                crd_i,res = clt.socket:get_num(res)
                 handle_put(clt_i, clt, crd_i)
                 if turn_of_player ~= clt_i and #clt.hand == 0 then
                     handle_end(clt_i)
                 end
             end
         end
-        return true
     else
         return false
     end
@@ -292,11 +292,11 @@ end
 function handle_clients()
     n = #clients
     for i=1, n, 1 do
-        if not handle_client(i) then
+        if handle_client(i) == false then
+            print("[handle_clients]", "Client "..i, clients[i].socket.err)
             return false
         end
     end
-    return true
 end
 
 function main()
@@ -309,15 +309,18 @@ function main()
         wait_connection()
     end
     init_game()
-    while 1 ~= 2 do
-        if not handle_clients() then
-            return
+
+    print("[main]", "Game initialized")
+    while true do
+        if handle_clients() == false then
+            break
         end
         a,b,c = os.execute("sleep 0.5")
         if b == "signal" then
-            return
+            break
         end
     end
+    print("[main]", "Exiting")
 end
 
 main()

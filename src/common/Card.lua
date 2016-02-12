@@ -6,6 +6,7 @@ function Card.load_color(tbl, color)
     for value=6, Card.ace, 1 do
         imagePath = 'assets/img/card_' .. color .. '_' .. value .. '.png'
         image = love.graphics.newImage(imagePath)
+        image:setFilter("linear", "linear")
         tbl[value] = {
             image = image,
             size = {

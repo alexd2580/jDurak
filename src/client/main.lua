@@ -12,7 +12,6 @@ local background = nil
 local background_size = nil
 
 -- Server
-
 local serv_addr = nil
 local serv_port = nil
 local server = nil
@@ -54,20 +53,21 @@ local draw_fps = nil
 function connect_server()
     local hdr = "[connect_server]"
     print(hdr, "Connecting to server: ", serv_addr..":"..serv_port)
-    server = Socket:new(serv_addr, serv_port)
-    if not server:connect() then
-        print(hdr, "Connection failed")
-        server = nil
+    server = Socket(serv_addr, serv_port)
+    server:connect()
+    server:write(client_magick)
+    server_resp = server:read(magick_length)
+
+    if server.err ~= nil then
+        server:close()
         return
     end
 
-    server:write(client_magick)
-    server_resp = server:read(magick_length)
     if server_resp ~= server_magick then
-        msg = "Invalid magick. Expected:"
-        print(hdr, msg, server_magick, "Got:", server_resp)
+        local exp = " Invalid magick. Expected: "..server_magick
+        server.err = hdr..exp.." Got: "..server_resp
         server:close()
-        server = nil
+        return
     end
 
     print(hdr, "Connected")
@@ -82,8 +82,8 @@ function prepare_graphics()
         return -- TODO
     end
     background_size = {
-      w = background:getWidth(),
-      h = background:getHeight()
+        w = background:getWidth(),
+        h = background:getHeight()
     }
     print(hdr, "background_size.x = " .. background_size.w,
         "background_size.y = " .. background_size.h)
@@ -196,10 +196,10 @@ end
 -- msg 1: Someone received a card
 function handle_get(str)
     local p = nil
-    p,str = get_digit(str, server)
+    p,str = server:get_digit(str)
     if p == msg_player then
         local card = nil
-        card,str = get_card(str, server)
+        card,str = server:get_card(str)
         table.insert(player_hand, card)
     else
         table.insert(opponent_hand, Card(0,0))
@@ -210,15 +210,15 @@ end
 -- msg 2: A card has benn placed
 function handle_put(str)
     local p = nil
-    p,str = get_digit(str, server)
+    p,str = server:get_digit(str)
     local card = nil
     if p == msg_player then
         local i = nil
-        i,str = get_num(str, server)
+        i,str = server:get_num(str)
         card = player_hand[i]
         table.remove(player_hand, i)
     else
-        card,str = get_card(str, server)
+        card,str = server:get_card(str)
         table.remove(opponent_hand, math.random(#opponent_hand))
     end
     card.position.x = stack_pos.x + love.math.random() * 40 - 20
@@ -230,56 +230,46 @@ end
 
 -- The game is over
 function handle_end(str)
-  local w = nil
-  w,str = get_digit(str, server)
-  pause_msg = (w == msg_player) and "You win :D" or "You lose D:"
-  game_running = false
-  handle_server(str)
+    local w = nil
+    w,str = server:get_digit(str)
+    pause_msg = (w == msg_player) and "You win :D" or "You lose D:"
+    game_running = false
+    handle_server(str)
 end
 
 -- The turn changed
 function handle_turn(str)
-  local p = nil
-  p,str = get_digit(str, server)
-  turn_of_player = p
-  handle_server(str)
+    local p = nil
+    p,str = server:get_digit(str)
+    turn_of_player = p
+    handle_server(str)
 end
 
 -- Graphical effect. Remove cards from stack and put them on the deck
 function handle_restack(str)
-  local card = card_stack[#card_stack]
-  card_stack = { card }
-  handle_server(str)
+    local card = card_stack[#card_stack]
+    card_stack = { card }
+    handle_server(str)
 end
 
 -- Player has chosen a color (queen)
 function handle_choose(str)
-  handle_server(str)
+    handle_server(str)
 end
 
 -- Check if server has sent data
 function handle_server(str)
-    if server == nil then
-        return
-    end
-
-    if str == nil then
-        str = ""
-    end
+    str = str == nil and "" or str
     if str:len() == 0 then
         str = server:read_nonblocking()
     end
-    if str == false then
-        print("[handle_server]", "Connection lost")
-        game_running = false
-        pause_msg = "Connection to server lost D:"
-        return
-    end
+    if server.err ~= nil then return end
+
     if str:len() == 0 then
         return -- nothing to do
     end
 
-    local cmd,str = get_digit(str) -- socket not required: len > 0
+    local cmd,str = server:get_digit(str)
     if cmd == msg_init then handle_init(str)
     elseif cmd == msg_get then handle_get(str)
     elseif cmd == msg_put then handle_put(str)
@@ -343,14 +333,20 @@ function love.keypressed(key)
     end
 end
 
--- Executed repeatedly - client-side game logic loop
-function update_game(dt)
-    love.timer.sleep(0.01)
-    update_fps = math.floor((30*update_fps + 1/dt) / 31)
+---------------- LOVE.UPDATE ----------------------
+
+-- client-side game logic loop
+function game_update(dt)
+    update_base(dt)
+    if server.err ~= nil then
+      print(server.err)
+      pause_msg = "Connection to server lost D:"
+      love.update = error_update
+    end
     handle_server("")
-    mouse_pos.x, mouse_pos.y = love.mouse.getPosition()
 end
 
+-- can and should be executed anyway
 function update_base(dt)
     love.timer.sleep(0.01)
     update_fps = math.floor((30*update_fps + 1/dt) / 31)
@@ -390,35 +386,35 @@ function draw_hand_at(hand, row)
 end
 
 function draw_game()
-  draw_fps = love.timer.getFPS()
+    draw_fps = love.timer.getFPS()
 
-  love.graphics.setColor(255, 255, 255)
+    love.graphics.setColor(255, 255, 255)
 
-  love.graphics.push()
-  love.graphics.scale(
-    window_size.w / background_size.w,
-    window_size.h / background_size.h
-  )
-  love.graphics.draw(background, 0, 0)
-  love.graphics.pop()
+    love.graphics.push()
+    love.graphics.scale(
+        window_size.w / background_size.w,
+        window_size.h / background_size.h
+    )
+    love.graphics.draw(background, 0, 0)
+    love.graphics.pop()
 
-  draw_table()
-  draw_hand_at(player_hand, player_row)
-  draw_hand_at(opponent_hand, opponent_row)
+    draw_table()
+    draw_hand_at(player_hand, player_row)
+    draw_hand_at(opponent_hand, opponent_row)
 
-  love.graphics.setColor(100, 100, 255)
-  love.graphics.circle("fill", mouse_pos.x, mouse_pos.y, 15)
+    love.graphics.setColor(100, 100, 255)
+    love.graphics.circle("fill", mouse_pos.x, mouse_pos.y, 15)
 
-  love.graphics.setColor(255, 255, 255)
-  love.graphics.print("FPS: "..update_fps.."/"..draw_fps, 10, 10, 0, 0.5)
+    love.graphics.setColor(255, 255, 255)
+    love.graphics.print("FPS: "..update_fps.."/"..draw_fps, 10, 10, 0, 0.5)
 
-  if not game_running then
-    love.graphics.setColor(0, 0, 0)
-    love.graphics.print(pause_msg,
-      10,
-      window_size.h - 10 - font_height,
-      0, 1)
-  end
+    if not game_running then
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.print(pause_msg,
+            10,
+            window_size.h - 10 - font_height,
+            0, 1)
+    end
 end
 
 function draw_input()

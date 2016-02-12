@@ -1,36 +1,51 @@
+-- Util lib for Socket.lua and Card.lua
+local Socket = require "common/Socket"
 
-function get_num(str, socket)
-    n1,str = get_digit(str, socket)
-    n2,str = get_digit(str, socket)
-    return n1*10+n2, str
-end
-
-function get_digit(str, socket)
-    if str:len() > 0 then
-        return str:byte(1)-48, str:sub(2)
-    else
-        return get_digit(socket:read())
+-- Reads a 2-digit positive decimal number.
+-- returns the number and the unparsed string
+function Socket:get_num(str)
+    local n1, n2
+    n1,str = self:get_digit(str)
+    n2,str = self:get_digit(str)
+    if self.error == nil then
+        return n1*10+n2, str
     end
 end
 
-function put_num(n, socket)
-    n1 = math.floor(n / 10) -- lua 5.1 compat
-    n2 = n % 10
-    put_digit(n1, socket)
-    put_digit(n2, socket)
+-- Reads a decimal digit
+-- returns the number and the unparsed string
+function Socket:get_digit(str)
+    if self.err == nil then
+        if str == nil or str:len() == 0 then
+            return self:get_digit(self:read())
+        end
+        return str:byte(1)-48, str:sub(2)
+    end
 end
 
-function put_digit(n, socket)
-    socket:write(string.char(n+48))
+-- Writes a 2-digit decimal number to the socket
+function Socket:put_num(n)
+    local n1 = math.floor(n / 10) -- lua 5.1 compat
+    local n2 = n % 10
+    self:put_digit(n1)
+    self:put_digit(n2)
 end
 
-function get_card(str, socket)
-    c,str = get_digit(str, socket)
-    v,str = get_num(str, socket)
-    return Card(c,v),str
+function Socket:put_digit(n)
+    self:write(string.char(n+48))
 end
 
-function put_card(card, socket)
-    put_digit(card.color, socket)
-    put_num(card.value, socket)
+-- returns the number and the unparsed string
+function Socket:get_card(str)
+    local c,v
+    c,str = self:get_digit(str)
+    v,str = self:get_num(str)
+    if self.error == nil then
+        return Card(c,v), str
+    end
+end
+
+function Socket:put_card(card)
+    self:put_digit(card.color)
+    self:put_num(card.value)
 end
